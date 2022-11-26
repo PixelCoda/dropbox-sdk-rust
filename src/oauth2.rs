@@ -294,6 +294,14 @@ enum AuthorizationState {
     AccessToken(String),
 }
 
+
+#[derive(Debug, Clone)]
+pub struct TokenCollection {
+    access_token: std::string::String,
+    refresh_token: std::string::String,
+}
+
+
 /// Provides for continuing authorization of the app.
 #[derive(Debug, Clone)]
 pub struct Authorization {
@@ -373,9 +381,12 @@ impl Authorization {
         Self { state: AuthorizationState::AccessToken(access_token) }
     }
 
+
+
+
     /// Obtain an access token. Use this to complete the authorization process, or to obtain an
     /// updated token when a short-lived access token has expired.
-    pub fn obtain_access_token(&mut self, client: impl NoauthClient) -> crate::Result<String> {
+    pub fn obtain_access_token(&mut self, client: impl NoauthClient) -> crate::Result<TokenCollection> {
         let client_id: String;
         let mut redirect_uri = None;
         let mut client_secret = None;
@@ -383,9 +394,14 @@ impl Authorization {
         let mut refresh_token = None;
         let mut auth_code = None;
 
+        let mut refresh_token_string = format!("");
+
         match self.state.clone() {
             AuthorizationState::AccessToken(token) => {
-                return Ok(token);
+                return Ok(TokenCollection {
+                    access_token: token,
+                    refresh_token: refresh_token_string,
+                });
             }
             AuthorizationState::InitialAuth {
                 client_id: id, flow_type, auth_code: code, redirect_uri: uri } =>
@@ -393,7 +409,10 @@ impl Authorization {
                 match flow_type {
                     Oauth2Type::ImplicitGrant(_secret) => {
                         self.state = AuthorizationState::AccessToken(code.clone());
-                        return Ok(code);
+                        return Ok(TokenCollection {
+                            access_token: code,
+                            refresh_token: refresh_token_string,
+                        });
                     }
                     Oauth2Type::AuthorizationCode(secret) => {
                         client_secret = Some(secret);
@@ -475,6 +494,7 @@ impl Authorization {
 
         match refresh_token {
             Some(refresh) => {
+                refresh_token_string = refresh.clone();
                 self.state = AuthorizationState::Refresh { client_id, refresh_token: refresh };
             }
             None => {
@@ -482,7 +502,10 @@ impl Authorization {
             }
         }
 
-        Ok(access_token)
+        Ok(TokenCollection {
+            access_token: access_token,
+            refresh_token: refresh_token_string,
+        })
     }
 }
 
@@ -523,7 +546,7 @@ impl TokenCache {
         // Check if the token changed while we were unlocked; only update it if it
         // didn't.
         if write.1 == old_token {
-            write.1 = Arc::new(write.0.obtain_access_token(client)?);
+            write.1 = Arc::new(write.0.obtain_access_token(client)?.access_token);
         }
         Ok(Arc::clone(&write.1))
     }
