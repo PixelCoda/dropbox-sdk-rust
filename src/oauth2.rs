@@ -297,8 +297,8 @@ enum AuthorizationState {
 
 #[derive(Debug, Clone)]
 pub struct TokenCollection {
-    access_token: std::string::String,
-    refresh_token: std::string::String,
+    pub access_token: std::string::String,
+    pub refresh_token: std::string::String,
 }
 
 
