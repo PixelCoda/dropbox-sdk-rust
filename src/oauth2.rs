@@ -89,7 +89,7 @@ impl TokenType {
 /// A proof key for OAuth2 PKCE ("Proof Key for Code Exchange") flow.
 #[derive(Debug, Clone)]
 pub struct PkceCode {
-    code: String,
+    pub code: String,
 }
 
 impl PkceCode {

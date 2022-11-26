@@ -1,7 +1,6 @@
 // Copyright (c) 2019-2021 Dropbox, Inc.
 
 #![deny(
-    missing_docs,
     rust_2018_idioms,
 )]
 
